@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
         StudentProfile::class,
         AlarmOccurrence::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -56,9 +56,9 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("DROP TABLE IF EXISTS `student_profile`")
                 db.execSQL("DROP TABLE IF EXISTS `alarm_occurrences`")
 
-                // Recreate v2 tables
+                // Recreate v2 tables with proper foreign keys
                 db.execSQL("CREATE TABLE IF NOT EXISTS `class_schedules` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `subject` TEXT NOT NULL, `teacher` TEXT NOT NULL, `room` TEXT NOT NULL, `notes` TEXT NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT NOT NULL, `isEnabled` INTEGER NOT NULL, `notifyClassEnd` INTEGER NOT NULL, `colorHex` TEXT NOT NULL)")
-                db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `classScheduleId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `reminderMinutesBefore` TEXT NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `classScheduleId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `reminderMinutesBefore` TEXT NOT NULL, FOREIGN KEY(`classScheduleId`) REFERENCES `class_schedules`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `homework` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `subject` TEXT NOT NULL, `description` TEXT NOT NULL, `dueDate` TEXT NOT NULL, `dueTime` TEXT NOT NULL, `reminderMinutesBefore` INTEGER NOT NULL, `teacher` TEXT NOT NULL, `attachmentName` TEXT NOT NULL, `status` TEXT NOT NULL, `isEnabled` INTEGER NOT NULL)")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `exams` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `examName` TEXT NOT NULL, `subject` TEXT NOT NULL, `date` TEXT NOT NULL, `time` TEXT NOT NULL, `room` TEXT NOT NULL, `teacher` TEXT NOT NULL, `notes` TEXT NOT NULL, `reminderOptions` TEXT NOT NULL, `isEnabled` INTEGER NOT NULL)")
                 db.execSQL("CREATE TABLE IF NOT EXISTS `reminders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `description` TEXT NOT NULL, `category` TEXT NOT NULL, `date` TEXT NOT NULL, `time` TEXT NOT NULL, `repeatType` TEXT NOT NULL, `repeatDays` TEXT NOT NULL, `reminderMinutesBefore` INTEGER NOT NULL, `sound` TEXT NOT NULL, `vibrate` INTEGER NOT NULL, `priority` TEXT NOT NULL, `isEnabled` INTEGER NOT NULL, `isCompleted` INTEGER NOT NULL)")
@@ -70,6 +70,13 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // Ensure schedule_days has foreign key constraint with cascade delete
+                db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `classScheduleId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `reminderMinutesBefore` TEXT NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_days_temp` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `classScheduleId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `reminderMinutesBefore` TEXT NOT NULL, FOREIGN KEY(`classScheduleId`) REFERENCES `class_schedules`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+                db.execSQL("INSERT INTO `schedule_days_temp` (`id`, `classScheduleId`, `dayOfWeek`, `startTime`, `endTime`, `reminderMinutesBefore`) SELECT `id`, `classScheduleId`, `dayOfWeek`, `startTime`, `endTime`, `reminderMinutesBefore` FROM `schedule_days` WHERE `classScheduleId` IN (SELECT `id` FROM `class_schedules`)")
+                db.execSQL("DROP TABLE `schedule_days`")
+                db.execSQL("ALTER TABLE `schedule_days_temp` RENAME TO `schedule_days`")
+
                 // Add SQLite performance indices for offline-first querying
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_class_schedules_subject` ON `class_schedules` (`subject`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_class_schedules_isEnabled` ON `class_schedules` (`isEnabled`)")
@@ -87,6 +94,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Ensure schedule_days table has the foreign key constraint and indices
+                db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `classScheduleId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `reminderMinutesBefore` TEXT NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `schedule_days_temp` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `classScheduleId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startTime` TEXT NOT NULL, `endTime` TEXT NOT NULL, `reminderMinutesBefore` TEXT NOT NULL, FOREIGN KEY(`classScheduleId`) REFERENCES `class_schedules`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+                db.execSQL("INSERT INTO `schedule_days_temp` (`id`, `classScheduleId`, `dayOfWeek`, `startTime`, `endTime`, `reminderMinutesBefore`) SELECT `id`, `classScheduleId`, `dayOfWeek`, `startTime`, `endTime`, `reminderMinutesBefore` FROM `schedule_days` WHERE `classScheduleId` IN (SELECT `id` FROM `class_schedules`)")
+                db.execSQL("DROP TABLE `schedule_days`")
+                db.execSQL("ALTER TABLE `schedule_days_temp` RENAME TO `schedule_days`")
+
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_schedule_days_classScheduleId` ON `schedule_days` (`classScheduleId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_schedule_days_dayOfWeek` ON `schedule_days` (`dayOfWeek`)")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -94,7 +115,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "studybell_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                     .addCallback(DatabaseCallback())
