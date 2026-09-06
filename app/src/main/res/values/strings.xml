@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">StudyBell</string>
+    <string name="app_tagline">Your school day, on time.</string>
+    <string name="widget_homework_desc">Shows upcoming homework deadlines and quick-toggle switches for overdue tasks.</string>
+</resources>

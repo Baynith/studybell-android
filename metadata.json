@@ -1,0 +1,6 @@
+{
+  "name": "StudyBell",
+  "description": "Your school day, on time. Offline-first student alarm, timetable, homework, exam and reminders app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
