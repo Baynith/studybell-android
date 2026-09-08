@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ads.AdMobManager
 import com.example.ui.navigation.AppDestination
 import com.example.ui.navigation.StudyBellApp
 import com.example.ui.theme.StudyBellTheme
@@ -55,6 +56,11 @@ class MainActivity : ComponentActivity() {
                 StudyBellApp(viewModel = vm, initialDestination = initialDest)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        AdMobManager.showAppOpenAdIfAvailable(this)
     }
 }
 

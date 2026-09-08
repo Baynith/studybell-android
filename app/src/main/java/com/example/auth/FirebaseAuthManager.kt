@@ -10,6 +10,8 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -170,6 +172,25 @@ class FirebaseAuthManager private constructor(context: Context) {
             _authResult.value = AuthResult.Error(friendlyMsg)
             Result.failure(Exception(friendlyMsg, e))
         }
+    }
+
+    suspend fun signInWithGoogleCredential(credential: AuthCredential): Result<FirebaseUser> {
+        _authResult.value = AuthResult.Loading
+        return try {
+            val authResult = awaitTask(auth.signInWithCredential(credential))
+            val user = authResult.user ?: throw IllegalStateException("User not found after Google Sign-In")
+            _authResult.value = AuthResult.Success(user, "Welcome, ${user.displayName ?: user.email ?: "Student"}!")
+            Result.success(user)
+        } catch (e: Exception) {
+            val friendlyMsg = parseAuthError(e)
+            _authResult.value = AuthResult.Error(friendlyMsg)
+            Result.failure(Exception(friendlyMsg, e))
+        }
+    }
+
+    suspend fun signInWithGoogleIdToken(idToken: String): Result<FirebaseUser> {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        return signInWithGoogleCredential(credential)
     }
 
     fun signOut() {

@@ -327,6 +327,33 @@ fun HomeScreen(
                 )
             }
         }
+
+        // Sponsored AdMob Banner
+        item {
+            Spacer(modifier = Modifier.height(10.dp))
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth().testTag("home_admob_banner")
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "ADVERTISEMENT",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    com.example.ads.AdMobBanner()
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 
     if (showAuthDialog) {

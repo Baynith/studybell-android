@@ -695,7 +695,90 @@ fun SettingsScreen(
             }
         }
 
-        // 8. About App
+        // 8. AdMob Ads & Support
+        item {
+            Text(
+                text = "SUPPORT & ADMOB",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.sp
+            )
+        }
+
+        item {
+            Card3D(elevation = 2) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = EmeraldGreen.copy(alpha = 0.15f),
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = EmeraldGreen, modifier = Modifier.size(20.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text("Google Mobile Ads", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text("App & Ad Units Configured", fontSize = 11.sp, color = EmeraldGreen, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                (context as? android.app.Activity)?.let { activity ->
+                                    com.example.ads.AdMobManager.showInterstitialAd(activity) {
+                                        Toast.makeText(context, "Interstitial Ad closed", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f).testTag("btn_show_interstitial")
+                        ) {
+                            Text("Interstitial Ad", fontSize = 12.sp)
+                        }
+
+                        Button(
+                            onClick = {
+                                (context as? android.app.Activity)?.let { activity ->
+                                    com.example.ads.AdMobManager.showRewardedInterstitialAd(
+                                        activity,
+                                        onUserEarnedReward = {
+                                            Toast.makeText(context, "Reward Earned! Thank you for supporting StudyBell!", Toast.LENGTH_LONG).show()
+                                        },
+                                        onAdDismissed = {
+                                            Toast.makeText(context, "Rewarded Ad completed", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = GoldDark),
+                            modifier = Modifier.weight(1f).testTag("btn_show_rewarded")
+                        ) {
+                            Text("Rewarded Ad", fontSize = 12.sp, color = Color.White)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    com.example.ads.AdMobBanner()
+                }
+            }
+        }
+
+        // 9. About App
         item {
             Card3D(elevation = 1) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

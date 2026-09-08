@@ -1,6 +1,9 @@
 package com.example.ui.auth
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,6 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -29,11 +35,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
 import com.example.auth.AuthResult
 import com.example.auth.FirebaseAuthManager
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldGreen
 import com.example.ui.theme.PurplePrimary
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 enum class AuthMode {
@@ -48,6 +60,7 @@ fun AuthDialog(
     onDismiss: () -> Unit,
     onAuthSuccess: (displayName: String, email: String) -> Unit
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val authResult by authManager.authResult.collectAsState()
@@ -421,6 +434,64 @@ fun AuthDialog(
                     }
                 }
 
+                // Google Sign In / Sign Up option
+                if (authMode != AuthMode.FORGOT_PASSWORD) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                        Text(
+                            text = "  OR  ",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            localError = null
+                            performGoogleSignIn(
+                                context = context,
+                                coroutineScope = coroutineScope,
+                                authManager = authManager,
+                                onError = { err -> localError = err }
+                            )
+                        },
+                        enabled = !isLoading,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .testTag("google_auth_button")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            GoogleLogoIcon(modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = if (authMode == AuthMode.SIGN_UP) "Sign up with Google" else "Sign in with Google",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
                 if (authMode == AuthMode.FORGOT_PASSWORD) {
                     TextButton(
                         onClick = {
@@ -447,5 +518,107 @@ fun AuthDialog(
                 }
             }
         }
+    }
+}
+
+private fun performGoogleSignIn(
+    context: Context,
+    coroutineScope: CoroutineScope,
+    authManager: FirebaseAuthManager,
+    onError: (String) -> Unit
+) {
+    val serverClientId = try {
+        val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+        if (resId != 0) context.getString(resId) else "studybell-google-signin.apps.googleusercontent.com"
+    } catch (e: Exception) {
+        "studybell-google-signin.apps.googleusercontent.com"
+    }
+
+    coroutineScope.launch {
+        try {
+            val credentialManager = CredentialManager.create(context)
+            val googleIdOption = GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false)
+                .setServerClientId(serverClientId)
+                .setAutoSelectEnabled(false)
+                .build()
+
+            val request = GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build()
+
+            val response = credentialManager.getCredential(context, request)
+            val credential = response.credential
+
+            if (credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                val idToken = googleIdTokenCredential.idToken
+                authManager.signInWithGoogleIdToken(idToken)
+            } else {
+                onError("Received unsupported credential type.")
+            }
+        } catch (e: Exception) {
+            val msg = e.localizedMessage ?: "Google Sign-In failed or was cancelled."
+            if (msg.contains("cancel", ignoreCase = true) || msg.contains("16", ignoreCase = true)) {
+                onError("Google Sign-In was cancelled.")
+            } else {
+                onError("Google Sign-In: $msg")
+            }
+        }
+    }
+}
+
+@Composable
+fun GoogleLogoIcon(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val cx = w / 2f
+        val cy = h / 2f
+        val r = minOf(w, h) * 0.42f
+
+        // Draw Google styled 4-colored circular ring
+        val strokeWidth = minOf(w, h) * 0.22f
+        val stroke = Stroke(width = strokeWidth)
+
+        // Red (Top & Top-Left)
+        drawArc(
+            color = Color(0xFFEA4335),
+            startAngle = 180f,
+            sweepAngle = 110f,
+            useCenter = false,
+            style = stroke
+        )
+        // Yellow (Bottom-Left)
+        drawArc(
+            color = Color(0xFFFBBC05),
+            startAngle = 110f,
+            sweepAngle = 70f,
+            useCenter = false,
+            style = stroke
+        )
+        // Green (Bottom & Bottom-Right)
+        drawArc(
+            color = Color(0xFF34A853),
+            startAngle = 0f,
+            sweepAngle = 110f,
+            useCenter = false,
+            style = stroke
+        )
+        // Blue (Top-Right and crossbar)
+        drawArc(
+            color = Color(0xFF4285F4),
+            startAngle = 290f,
+            sweepAngle = 70f,
+            useCenter = false,
+            style = stroke
+        )
+        // Blue horizontal bar
+        drawLine(
+            color = Color(0xFF4285F4),
+            start = androidx.compose.ui.geometry.Offset(cx, cy),
+            end = androidx.compose.ui.geometry.Offset(cx + r, cy),
+            strokeWidth = strokeWidth * 0.9f
+        )
     }
 }
