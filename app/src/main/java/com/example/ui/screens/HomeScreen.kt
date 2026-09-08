@@ -150,12 +150,12 @@ fun HomeScreen(
             )
         }
 
-        // 2. Offline Test Alarm Banner
+        // 2. Offline Test Alarm & Local Storage Status Banner
         item {
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = GoldAccent.copy(alpha = 0.15f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, GoldDark.copy(alpha = 0.3f)),
+                color = EmeraldGreen.copy(alpha = 0.12f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.3f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -169,33 +169,48 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.WifiOff,
-                            contentDescription = null,
-                            tint = GoldDark,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "100% Offline Alarms",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = EmeraldGreen.copy(alpha = 0.2f),
+                            modifier = Modifier.size(30.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Storage,
+                                    contentDescription = "Offline Storage",
+                                    tint = EmeraldGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "100% Offline Room Storage",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Classes, homework & exams kept locally on device",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     FilledTonalButton(
                         onClick = { viewModel.testAlarm(5) },
                         colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = GoldDark,
+                            containerColor = EmeraldGreen,
                             contentColor = Color.White
                         ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                         modifier = Modifier.height(34.dp).testTag("test_alarm_button")
                     ) {
                         Icon(Icons.Default.Alarm, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Test Alarm (5s)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Test (5s)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -318,13 +333,42 @@ fun HomeScreen(
                 )
             }
         } else {
-            items(uiState.todaySchedule, key = { it.id }) { item ->
-                TodayScheduleRow(
-                    item = item,
-                    onClick = {
-                        onNavigateToItem(item.category, item.originalId)
+            uiState.todaySchedule.forEachIndexed { index, item ->
+                item(key = item.id) {
+                    TodayScheduleRow(
+                        item = item,
+                        onClick = {
+                            onNavigateToItem(item.category, item.originalId)
+                        }
+                    )
+                }
+
+                // Insert sponsored banner ad between schedule items
+                if (index > 0 && index % 3 == 0) {
+                    item(key = "home_schedule_ad_$index") {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "SPONSORED",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                                com.example.ads.AdMobBanner()
+                            }
+                        }
                     }
-                )
+                }
             }
         }
 

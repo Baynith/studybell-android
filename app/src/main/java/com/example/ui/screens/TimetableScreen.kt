@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alarm.NextOccurrenceEngine
+import com.example.ads.AdMobBanner
 import com.example.data.model.ClassWithDays
 import com.example.data.model.ScheduleDay
 import com.example.ui.components.Card3D
@@ -166,7 +167,7 @@ fun TimetableScreen(
                                 color = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.padding(vertical = 6.dp)
                             )
-                            dayClasses.forEach { (cls, daySchedule) ->
+                            dayClasses.forEachIndexed { idx, (cls, daySchedule) ->
                                 ClassTimetableCard(
                                     classWithDays = cls,
                                     daySchedule = daySchedule,
@@ -175,7 +176,58 @@ fun TimetableScreen(
                                     onDelete = { viewModel.deleteClass(cls.classSchedule.id) }
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
+
+                                // Ad banner between every 2 schedule items
+                                if (idx > 0 && idx % 2 == 1) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "SPONSORED",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                                letterSpacing = 1.sp,
+                                                modifier = Modifier.padding(bottom = 4.dp)
+                                            )
+                                            AdMobBanner()
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
                             }
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "SPONSORED",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            AdMobBanner()
                         }
                     }
                 }
@@ -199,14 +251,69 @@ fun TimetableScreen(
                     contentPadding = PaddingValues(bottom = 96.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(dayClasses, key = { it.first.classSchedule.id.toString() + "_" + it.second.id }) { (cls, daySchedule) ->
-                        ClassTimetableCard(
-                            classWithDays = cls,
-                            daySchedule = daySchedule,
-                            onEdit = { onEditClass(cls.classSchedule.id) },
-                            onToggle = { viewModel.toggleClassEnabled(cls) },
-                            onDelete = { viewModel.deleteClass(cls.classSchedule.id) }
-                        )
+                    dayClasses.forEachIndexed { index, (cls, daySchedule) ->
+                        item(key = cls.classSchedule.id.toString() + "_" + daySchedule.id) {
+                            ClassTimetableCard(
+                                classWithDays = cls,
+                                daySchedule = daySchedule,
+                                onEdit = { onEditClass(cls.classSchedule.id) },
+                                onToggle = { viewModel.toggleClassEnabled(cls) },
+                                onDelete = { viewModel.deleteClass(cls.classSchedule.id) }
+                            )
+                        }
+
+                        // Insert ad banner between classes
+                        if (index > 0 && index % 2 == 1) {
+                            item(key = "ad_between_class_$index") {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "SPONSORED",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            letterSpacing = 1.sp,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                        AdMobBanner()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Bottom banner
+                    item(key = "timetable_bottom_ad") {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "SPONSORED",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                                AdMobBanner()
+                            }
+                        }
                     }
                 }
             }

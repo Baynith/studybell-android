@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alarm.NextOccurrenceEngine
+import com.example.ads.AdMobBanner
 import com.example.data.model.Homework
 import com.example.data.model.TaskStatus
 import com.example.ui.components.Card3D
@@ -145,13 +146,67 @@ fun TasksScreen(
                 contentPadding = PaddingValues(bottom = 96.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(filteredHomework, key = { it.id }) { hw ->
-                    HomeworkCard(
-                        homework = hw,
-                        onToggle = { viewModel.toggleHomeworkStatus(hw) },
-                        onEdit = { onEditHomework(hw.id) },
-                        onDelete = { viewModel.deleteHomework(hw.id) }
-                    )
+                filteredHomework.forEachIndexed { index, hw ->
+                    item(key = hw.id) {
+                        HomeworkCard(
+                            homework = hw,
+                            onToggle = { viewModel.toggleHomeworkStatus(hw) },
+                            onEdit = { onEditHomework(hw.id) },
+                            onDelete = { viewModel.deleteHomework(hw.id) }
+                        )
+                    }
+
+                    // Insert ad banner between homework tasks
+                    if (index > 0 && index % 2 == 1) {
+                        item(key = "tasks_ad_between_$index") {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "SPONSORED",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        letterSpacing = 1.sp,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                    AdMobBanner()
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item(key = "tasks_bottom_ad") {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "SPONSORED",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                letterSpacing = 1.sp,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            AdMobBanner()
+                        }
+                    }
                 }
             }
         }

@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.example.ads.AdMobManager
 import com.example.data.model.ReminderCategory
 import com.example.ui.components.AddChoiceBottomSheet
 import com.example.ui.screens.*
@@ -269,6 +270,9 @@ fun StudyBellApp(
                                 } else {
                                     viewModel.saveClass(schedule, days)
                                 }
+                                (context as? android.app.Activity)?.let { act ->
+                                    AdMobManager.showInterstitialAd(act)
+                                }
                             },
                             onBack = { currentDestination = AppDestination.Main }
                         )
@@ -283,6 +287,9 @@ fun StudyBellApp(
                                     viewModel.updateHomework(hw)
                                 } else {
                                     viewModel.saveHomework(hw)
+                                }
+                                (context as? android.app.Activity)?.let { act ->
+                                    AdMobManager.showInterstitialAd(act)
                                 }
                             },
                             onBack = { currentDestination = AppDestination.Main }
@@ -299,6 +306,9 @@ fun StudyBellApp(
                                 } else {
                                     viewModel.saveExam(exam)
                                 }
+                                (context as? android.app.Activity)?.let { act ->
+                                    AdMobManager.showInterstitialAd(act)
+                                }
                             },
                             onBack = { currentDestination = AppDestination.Main }
                         )
@@ -314,6 +324,9 @@ fun StudyBellApp(
                                     viewModel.updateReminder(reminder)
                                 } else {
                                     viewModel.saveReminder(reminder)
+                                }
+                                (context as? android.app.Activity)?.let { act ->
+                                    AdMobManager.showInterstitialAd(act)
                                 }
                             },
                             onBack = { currentDestination = AppDestination.Main }
