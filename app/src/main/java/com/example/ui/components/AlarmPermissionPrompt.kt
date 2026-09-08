@@ -119,20 +119,20 @@ fun ExactAlarmPermissionBanner(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (!canScheduleExact) "Exact Alarm Access Required" else "Notification Permission Needed",
+                            text = if (!canScheduleExact) "High-Precision Exact Alarm Scheduling Authorization Required" else "High-Priority Notification Delivery Permission Needed",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = Color.White
                         )
                         Text(
                             text = if (!canScheduleExact) {
-                                "Required on Android 12+ for school timetable bells to ring on the exact minute."
+                                "Required on Android 12 (API level 31) and higher so that school timetable bells, class commencement chimes, and assignment reminders ring at the exact scheduled second without power-saving delays."
                             } else {
-                                "Enable notifications so you never miss a class or homework deadline."
+                                "Enable high-priority notification delivery permissions so you never miss an upcoming class period, homework deadline countdown, or examination alert."
                             },
                             fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.8f),
-                            lineHeight = 16.sp
+                            color = Color.White.copy(alpha = 0.85f),
+                            lineHeight = 17.sp
                         )
                     }
 
@@ -250,9 +250,10 @@ fun ExactAlarmExplanationDialog(
         },
         title = {
             Text(
-                "Exact Timing & Alarms",
+                "System Permissions, Device Authorizations & High-Precision Alarm Accuracy",
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                fontSize = 17.sp,
+                lineHeight = 22.sp
             )
         },
         text = {
@@ -261,39 +262,40 @@ fun ExactAlarmExplanationDialog(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "StudyBell is an offline-first timetable and school bell application. For alarms to fire with second-level precision, Android requires specific user authorizations:",
+                    text = "StudyBell operates as a 100% offline-first timetable and school bell scheduler. To ensure that your classes, homework countdown timers, and examination chimes trigger reliably with second-level precision, the Android operating system mandates the following explicit user permissions:",
                     fontSize = 13.sp,
+                    lineHeight = 18.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Item 1: Exact Alarms
                 PermissionStatusRow(
                     icon = Icons.Default.Schedule,
-                    title = "Exact Alarms (Android 12+)",
-                    desc = "Allows scheduling alarms at exact times without Android batching or delaying them.",
+                    title = "Exact Alarm Scheduling Authorization (SCHEDULE_EXACT_ALARM)",
+                    desc = "Authorizes StudyBell to schedule exact, unbatched alarms using the system AlarmManager, preventing Android from deferring or delaying school bell chimes by up to 30 minutes.",
                     isGranted = canScheduleExact,
                     onAction = onOpenExactAlarm,
-                    actionText = "Grant"
+                    actionText = "Grant Permission"
                 )
 
                 // Item 2: Notifications
                 PermissionStatusRow(
                     icon = Icons.Default.Notifications,
-                    title = "Notifications (Android 13+)",
-                    desc = "Allows displaying banner alerts, lock screen reminders, and ring controls.",
+                    title = "High-Priority Lock-Screen Notifications (POST_NOTIFICATIONS)",
+                    desc = "Permits heads-up alert banners, custom ringtone chimes, and full-screen alarm screens when your mobile device is locked, motionless, or in standby mode.",
                     isGranted = hasNotificationPermission,
                     onAction = onOpenNotifications,
-                    actionText = "Allow"
+                    actionText = "Allow Banners"
                 )
 
                 // Item 3: Battery Saver
                 PermissionStatusRow(
                     icon = Icons.Default.BatteryChargingFull,
-                    title = "Battery Saver Whitelist",
-                    desc = "Prevents Android Doze mode from suppressing morning bells and class alarms.",
+                    title = "Battery Optimization Exemption Whitelist (Doze Mode Exemption)",
+                    desc = "Exempts background alarm scheduling from aggressive operating system power management and deep sleep Doze mode restrictions so morning bells ring on time.",
                     isGranted = isBatteryOptimizedIgnored,
                     onAction = onIgnoreBattery,
-                    actionText = "Unrestrict"
+                    actionText = "Unrestrict App"
                 )
             }
         },
