@@ -33,11 +33,16 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.R
 import com.example.alarm.AlarmPermissionHelper
+import com.example.alarm.StudyBellNotificationManager
+import com.example.ui.components.BrandAboutFooter
 import com.example.ui.components.Card3D
 import com.example.ui.auth.AuthDialog
 import com.example.ui.theme.CoralPink
 import com.example.ui.theme.EmeraldGreen
+import com.example.ui.theme.GoldAccent
 import com.example.ui.theme.GoldDark
+import com.example.ui.theme.NavyCard
+import com.example.ui.theme.NavyDark
 import com.example.ui.theme.PurplePrimary
 import com.example.ui.viewmodel.StudyBellUiState
 import com.example.ui.viewmodel.StudyBellViewModel
@@ -315,103 +320,111 @@ fun SettingsScreen(
             }
         }
 
-        // Exact Alarms & System Permissions Section (Offline-First Timing)
+        // System Permissions (Clean & Short)
         item {
-            Column(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)) {
-                Text(
-                    text = "SYSTEM PERMISSIONS, DEVICE AUTHORIZATIONS & HIGH-PRECISION ALARM CAPABILITIES",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 1.sp
+            Text(
+                text = "SYSTEM PERMISSIONS",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.sp
+            )
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // 1. Exact Alarm Scheduling
+                SystemPermissionCompactRow(
+                    icon = Icons.Default.Schedule,
+                    title = "Exact Alarms",
+                    subtitle = "Precision timing for class bells & timers",
+                    isGranted = canScheduleExact,
+                    actionLabel = if (canScheduleExact) "Settings" else "Enable",
+                    onClick = { AlarmPermissionHelper.openExactAlarmSettings(context) }
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Detailed Android operating system authorization requirements and background execution privileges necessary to ensure StudyBell's offline school bells, class chimes, homework countdown timers, and examination alerts ring reliably at the exact scheduled second.",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    lineHeight = 17.sp
+
+                // 2. High-Priority Notifications & Lock Screen
+                SystemPermissionCompactRow(
+                    icon = Icons.Default.Notifications,
+                    title = "Lock Screen & Alerts",
+                    subtitle = "Banners & full-screen alarm on closed screen",
+                    isGranted = hasNotificationPermission,
+                    actionLabel = if (hasNotificationPermission) "Settings" else "Enable",
+                    onClick = { AlarmPermissionHelper.openNotificationSettings(context) }
+                )
+
+                // 3. Battery Optimization Exemption
+                SystemPermissionCompactRow(
+                    icon = Icons.Default.BatteryChargingFull,
+                    title = "Battery Optimization",
+                    subtitle = "Keep bells active during standby & deep sleep",
+                    isGranted = isBatteryOptimizedIgnored,
+                    actionLabel = if (isBatteryOptimizedIgnored) "Exempt" else "Allow",
+                    onClick = { AlarmPermissionHelper.requestIgnoreBatteryOptimizations(context) }
+                )
+
+                // 4. Alarm Resync Engine
+                SystemPermissionCompactRow(
+                    icon = Icons.Default.Sync,
+                    title = "Resync All Bells",
+                    subtitle = "Re-arm all timetable & exam alarms with clock",
+                    isGranted = true,
+                    actionLabel = "Sync",
+                    onClick = {
+                        viewModel.rescheduleAllAlarms()
+                        Toast.makeText(context, "All alarms resynced with system clock!", Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
         }
 
+        // Closed Screen & Notification Preview Section (Image Reference)
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                // 1. Exact Alarm Scheduling Authorization
-                SystemPermissionDetailedCard(
-                    icon = Icons.Default.Schedule,
-                    title = "Android Exact Alarm Scheduling Authorization",
-                    technicalIdentifier = "SCHEDULE_EXACT_ALARM • android.permission.SCHEDULE_EXACT_ALARM",
-                    description = "Grants the StudyBell application explicit system-level permission to invoke high-precision AlarmManager APIs (`setExactAndAllowWhileIdle`) on Android 12 (API level 31) and newer versions. Without this critical operating system authorization, Android's power-management engine automatically batches, defers, or delays all scheduled school bell chimes and timetable alarms by fifteen to thirty minutes, which would cause you to miss class start times, homework hand-in deadlines, and study session intervals.",
-                    statusDescription = if (canScheduleExact) {
-                        "System Authorization Status: Granted & Fully Active — High-precision AlarmManager scheduling is authorized. Timetable bells and alarms will sound with exact-second precision even while the operating system is in low-power standby."
-                    } else {
-                        "System Authorization Status: Action Required (Not Authorized) — Exact alarm scheduling is currently restricted by Android. Class bells may be delayed or bundled. Tap below to navigate into Android System Settings to grant exact alarm privileges."
-                    },
-                    isGranted = canScheduleExact,
-                    actionButtonLabel = if (canScheduleExact) {
-                        "Review Exact Alarm Authorization in Android System Settings"
-                    } else {
-                        "Grant Exact Alarm Scheduling Authorization in System Settings"
-                    },
-                    onClick = { AlarmPermissionHelper.openExactAlarmSettings(context) }
-                )
+            Text(
+                text = "CLOSED SCREEN & NOTIFICATIONS",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 1.sp,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        }
 
-                // 2. High-Priority Notification Delivery & Lock-Screen Banners
-                SystemPermissionDetailedCard(
-                    icon = Icons.Default.Notifications,
-                    title = "High-Priority Notification Delivery & Lock-Screen Banner Authorization",
-                    technicalIdentifier = "POST_NOTIFICATIONS • android.permission.POST_NOTIFICATIONS",
-                    description = "Permits StudyBell to publish immediate heads-up notifications, full-screen incoming alarm alert screens, custom ringing tones, and persistent status notifications on Android 13 (API level 33) and newer versions. This permission is essential for guaranteeing that urgent reminder banners appear over your lock screen when class periods begin or assignment deadlines arrive, allowing you to dismiss, snooze, or view class notes without needing to manually unlock your device first.",
-                    statusDescription = if (hasNotificationPermission) {
-                        "System Authorization Status: Allowed & Operational — High-priority notification channels, lock-screen alert cards, sound chimes, and full-screen alarm interfaces are completely authorized and active."
-                    } else {
-                        "System Authorization Status: Action Required (Notifications Blocked) — Notification privileges are currently disabled. You will not receive heads-up banners or lock-screen ringing displays. Tap below to enable notifications in System Settings."
-                    },
-                    isGranted = hasNotificationPermission,
-                    actionButtonLabel = if (hasNotificationPermission) {
-                        "Configure StudyBell Notification Channels in System Settings"
-                    } else {
-                        "Grant High-Priority Notification Permission in System Settings"
-                    },
-                    onClick = { AlarmPermissionHelper.openNotificationSettings(context) }
-                )
-
-                // 3. Battery Optimization Exemption & Android Doze Mode Sleep Whitelist
-                SystemPermissionDetailedCard(
-                    icon = Icons.Default.BatteryChargingFull,
-                    title = "Battery Optimization Exemption & Android Doze Mode Sleep Whitelist",
-                    technicalIdentifier = "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS • Power Management Exemption",
-                    description = "Exempts StudyBell's background scheduling services from aggressive Android operating system Doze Mode algorithms and manufacturer-specific task killers (such as those found on Samsung, Xiaomi, OnePlus, and Huawei devices). When granted, background alarm triggers and timetable monitoring services remain completely unthrottled even after your device has been resting idle, motionless, or deep sleeping overnight, ensuring early morning class chimes and first-period timetable bells sound reliably.",
-                    statusDescription = if (isBatteryOptimizedIgnored) {
-                        "System Authorization Status: Unrestricted & Exempt — App is fully protected from Android Doze mode deep sleep throttling and manufacturer background memory termination."
-                    } else {
-                        "System Authorization Status: Restricted by Battery Optimization — Standard device battery saving may throttle or delay morning bells while your device deep sleeps. Tap below to request exemption from battery optimization."
-                    },
-                    isGranted = isBatteryOptimizedIgnored,
-                    actionButtonLabel = if (isBatteryOptimizedIgnored) {
-                        "Review Battery Optimization Exemption Profile in System Settings"
-                    } else {
-                        "Request Exemption From Battery Optimization Whitelist"
-                    },
-                    onClick = { AlarmPermissionHelper.requestIgnoreBatteryOptimizations(context) }
-                )
-
-                // 4. Complete Alarm Resynchronization & Database Reconciliation Engine
-                SystemPermissionDetailedCard(
-                    icon = Icons.Default.Sync,
-                    title = "Complete Alarm Resynchronization & Local Database Reconciliation Engine",
-                    technicalIdentifier = "SQLite Room Local Database • Android System AlarmManager Re-Arming",
-                    description = "Executes an exhaustive reconciliation cycle that reads all recurring class schedules, pending homework tasks, examination alerts, and custom reminders stored in your device's local Room database. The engine recalculates the exact millisecond timestamps for every upcoming event according to the school calendar and re-arms all system alarm pending intents with Android's AlarmManager.",
-                    statusDescription = "Operational Status: Synchronized & Armed — Ready to execute an on-demand reconciliation and verification pass across all scheduled school bells, ensuring pending alarms are perfectly in sync with the current system clock.",
-                    isGranted = true,
-                    actionButtonLabel = "Execute Full Alarm Resynchronization and Verification Cycle",
-                    onClick = {
-                        viewModel.rescheduleAllAlarms()
-                        Toast.makeText(context, "All timetable, homework & exam alarms resynchronized with system clock!", Toast.LENGTH_LONG).show()
-                    }
-                )
-            }
+        item {
+            LockScreenPreviewCard(
+                onTestLockScreenBanner = {
+                    StudyBellNotificationManager.showAlarmNotification(
+                        context = context,
+                        notificationId = 9991,
+                        channelId = StudyBellNotificationManager.CHANNEL_CLASS,
+                        title = "Science Class starts in 15 minutes 🧪",
+                        subtitle = "Mr. John • Lab 2 • 08:00 AM",
+                        details = "Chemistry Lab 2 • Bring notebook & lab coat",
+                        categoryName = "CLASS",
+                        canComplete = false,
+                        canSnooze = true,
+                        reminderId = 0L,
+                        customSnoozeMinutes = 5
+                    )
+                    Toast.makeText(context, "Banner sent! Lock phone screen now to preview.", Toast.LENGTH_LONG).show()
+                },
+                onTestFullScreenAlarm = {
+                    val triggerTime = System.currentTimeMillis() + 3500L
+                    StudyBellNotificationManager.scheduleExactAlarm(
+                        context = context,
+                        occurrenceId = 9992L,
+                        triggerAtMillis = triggerTime,
+                        title = "Science Class",
+                        subtitle = "Starts in 15 minutes",
+                        details = "Mr. John • Lab 2",
+                        category = "CLASS",
+                        reminderId = 0L,
+                        canComplete = false,
+                        canSnooze = true
+                    )
+                    Toast.makeText(context, "Alarm in 3s! Turn off or lock screen now.", Toast.LENGTH_LONG).show()
+                }
+            )
         }
 
         // 2. Alarm & Sound Section
@@ -773,8 +786,33 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text("Google Mobile Ads", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                Text("App & Ad Units Configured", fontSize = 11.sp, color = EmeraldGreen, fontWeight = FontWeight.SemiBold)
+                                Text("App & Ad Units Configured • ads.txt Verified", fontSize = 11.sp, color = EmeraldGreen, fontWeight = FontWeight.SemiBold)
                             }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // ads.txt authorized digital seller info
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Verified, contentDescription = null, tint = EmeraldGreen, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("app-ads.txt / ads.txt Authorized Seller", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "google.com, pub-4408731854837351, DIRECT, f08c47fec0942fa0",
+                                fontSize = 11.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
 
@@ -824,18 +862,9 @@ fun SettingsScreen(
             }
         }
 
-        // 9. About App
+        // 9. About Us & Brand
         item {
-            Card3D(elevation = 1) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = PurplePrimary, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("StudyBell v1.0.0", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text("Your school day, on time. Fully offline.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
+            BrandAboutFooter()
         }
     }
 
@@ -1250,123 +1279,70 @@ fun SettingRow(
 }
 
 @Composable
-fun SystemPermissionDetailedCard(
+fun SystemPermissionCompactRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    technicalIdentifier: String,
-    description: String,
-    statusDescription: String,
+    subtitle: String,
     isGranted: Boolean,
-    actionButtonLabel: String,
+    actionLabel: String,
     onClick: () -> Unit
 ) {
-    Card3D(elevation = 2) {
-        Column(
+    Card3D(elevation = 1) {
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(4.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Header Row: Icon, Title, Technical Identifier, and Status Tag
-            Row(
-                verticalAlignment = Alignment.Top,
-                modifier = Modifier.fillMaxWidth()
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = if (isGranted) EmeraldGreen.copy(alpha = 0.14f) else MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
+                modifier = Modifier.size(38.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (isGranted) EmeraldGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = if (isGranted) EmeraldGreen else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        lineHeight = 20.sp
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isGranted) EmeraldGreen else MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = technicalIdentifier,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-                    )
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isGranted) EmeraldGreen.copy(alpha = 0.16f) else MaterialTheme.colorScheme.error.copy(alpha = 0.16f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (isGranted) Icons.Default.CheckCircle else Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = if (isGranted) EmeraldGreen else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (isGranted) "AUTHORIZED" else "REQUIRED",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (isGranted) EmeraldGreen else MaterialTheme.colorScheme.error
-                        )
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            // Long detailed explanation
-            Text(
-                text = description,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Detailed Status Banner
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = if (isGranted) {
-                    EmeraldGreen.copy(alpha = 0.08f)
-                } else {
-                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
-                },
-                border = androidx.compose.foundation.BorderStroke(
-                    1.dp,
-                    if (isGranted) EmeraldGreen.copy(alpha = 0.25f) else MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isGranted) EmeraldGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = if (isGranted) "ACTIVE" else "NEEDED",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isGranted) EmeraldGreen else MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = statusDescription,
+                    text = subtitle,
                     fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isGranted) EmeraldGreen else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // Action Button
             FilledTonalButton(
                 onClick = onClick,
                 shape = RoundedCornerShape(10.dp),
@@ -1381,20 +1357,294 @@ fun SystemPermissionDetailedCard(
                         contentColor = Color.White
                     )
                 },
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
-                modifier = Modifier.fillMaxWidth()
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                Icon(
-                    imageVector = if (isGranted) Icons.Default.Settings else Icons.Default.Security,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = actionButtonLabel,
-                    fontSize = 12.5.sp,
+                    text = actionLabel,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Interactive preview demonstrating lock-screen banners and closed-screen alarm wake-up
+ * strictly matching the user's reference image.
+ */
+@Composable
+fun LockScreenPreviewCard(
+    onTestLockScreenBanner: () -> Unit,
+    onTestFullScreenAlarm: () -> Unit
+) {
+    Card3D(elevation = 2) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = PurplePrimary.copy(alpha = 0.15f),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.PhoneAndroid,
+                            contentDescription = null,
+                            tint = PurplePrimary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "Lock Screen & Closed Screen Alerts",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Banners appear on lock screen; screen wakes up on alarm.",
+                        fontSize = 11.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Interactive Test Triggers
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onTestLockScreenBanner,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = PurplePrimary,
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Test Banner", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                FilledTonalButton(
+                    onClick = onTestFullScreenAlarm,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = NavyDark,
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.Alarm, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Test Alarm (3s)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Visual Reference 1: Lock Screen Banner (Mockup 1)
+            Text(
+                text = "1. LOCK SCREEN – BANNER NOTIFICATIONS",
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF1E293B),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.studybell_icon_1788610146906),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "StudyBell",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "now",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Science Class starts in 15 minutes 🧪",
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Mr. John • Lab 2 • 08:00 AM",
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color.White.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = "Snooze 5m",
+                                fontSize = 11.sp,
+                                color = GoldAccent,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = PurplePrimary.copy(alpha = 0.4f)
+                        ) {
+                            Text(
+                                text = "Dismiss",
+                                fontSize = 11.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Visual Reference 2: Full Screen Alarm on Closed Screen (Mockup 2)
+            Text(
+                text = "2. CLOSED SCREEN – FULL SCREEN ALARM",
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF0F172A),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PurplePrimary.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "07:45",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Saturday, 5 May",
+                        fontSize = 11.sp,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.science_flask_3d_1788614104425),
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Science Class", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color.White)
+                                Text("Mr. John • Lab 2", fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+                                Text("Starts in 15 minutes", fontSize = 11.sp, color = GoldAccent, fontWeight = FontWeight.Bold)
+                            }
+                            Text("07:45 AM", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF1E293B),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Snooze 5 min",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = PurplePrimary,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "Dismiss",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Full screen alarm when the time is up. Snooze or Dismiss the alarm.",
+                        fontSize = 10.5.sp,
+                        color = Color.White.copy(alpha = 0.55f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
         }
     }

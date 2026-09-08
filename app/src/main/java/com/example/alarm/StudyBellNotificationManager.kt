@@ -325,6 +325,15 @@ object StudyBellNotificationManager {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Public version for secure lock screen display (Mockup 1)
+        val publicNotification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.studybell_icon_1788610146906)
+            .setContentTitle(title)
+            .setContentText(subtitle)
+            .setSubText("StudyBell")
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .build()
+
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.studybell_icon_1788610146906)
             .setContentTitle(title)
@@ -338,12 +347,10 @@ object StudyBellNotificationManager {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setPublicVersion(publicNotification)
             .setContentIntent(contentPendingIntent)
+            .setFullScreenIntent(fullScreenPendingIntent, true)
             .setAutoCancel(true)
-
-        if (channelId == CHANNEL_ALARM || channelId == CHANNEL_CLASS) {
-            builder.setFullScreenIntent(fullScreenPendingIntent, true)
-        }
 
         // Custom Snooze Action
         if (canSnooze) {

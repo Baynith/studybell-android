@@ -68,18 +68,21 @@ class AlarmActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Wake screen up and show when locked
+        // Wake screen up, turn screen on and bypass keyguard on closed screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-        } else {
-            @Suppress("DEPRECATION")
-            window.addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-            )
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+            keyguardManager?.requestDismissKeyguard(this, null)
         }
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+            WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+            WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+            WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        )
 
         val notificationId = intent.getIntExtra("EXTRA_NOTIFICATION_ID", 1001)
         val title = intent.getStringExtra("EXTRA_TITLE") ?: "Science Class"
@@ -337,30 +340,40 @@ fun AlarmRingingView(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = currentTime,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        letterSpacing = 1.sp
+                    )
                 }
             }
 
-            // Bottom Actions: Snooze and Dismiss (Image 1 Screen 2)
+            // Bottom Actions: Snooze and Dismiss (Image Reference Mockup 2)
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Snooze Button
+                    // Snooze Button (Dark pill)
                     Button(
                         onClick = { onSnooze(defaultSnoozeMinutes) },
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(26.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = NavyDark,
+                            containerColor = Color(0xFF1E293B),
                             contentColor = Color.White
                         ),
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp)
-                            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(26.dp))
                             .testTag("alarm_snooze_button")
                     ) {
                         Icon(Icons.Default.Snooze, contentDescription = null, tint = GoldAccent)
@@ -372,10 +385,10 @@ fun AlarmRingingView(
                         )
                     }
 
-                    // Dismiss Button
+                    // Dismiss Button (Purple pill)
                     Button(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(26.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = PurplePrimary,
                             contentColor = Color.White
@@ -390,6 +403,14 @@ fun AlarmRingingView(
                         Text("Dismiss", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
+
+                Text(
+                    text = "Full screen alarm when the time is up. Snooze or Dismiss the alarm.",
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.55f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                )
 
                 // Snooze duration quick options toggle
                 TextButton(

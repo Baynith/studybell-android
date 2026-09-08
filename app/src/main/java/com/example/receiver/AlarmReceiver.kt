@@ -14,6 +14,7 @@ import com.example.alarm.StudyBellNotificationManager
 import com.example.data.db.AppDatabase
 import com.example.data.model.TaskStatus
 import com.example.data.repository.StudyBellRepository
+import com.example.ui.alarm.AlarmActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,6 +45,39 @@ class AlarmReceiver : BroadcastReceiver() {
 
         when (action) {
             ACTION_ALARM_TRIGGER -> {
+                // Wake up screen when locked/closed
+                val powerManager = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                @Suppress("DEPRECATION")
+                val wakeLock = powerManager?.newWakeLock(
+                    android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                    android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                    android.os.PowerManager.ON_AFTER_RELEASE,
+                    "StudyBell:AlarmWakeLock"
+                )
+                try {
+                    wakeLock?.acquire(15000L)
+                } catch (e: Exception) {
+                    Log.e(TAG, "WakeLock acquire error: ${e.message}")
+                }
+
+                // Immediately launch AlarmActivity over lock screen
+                val fullScreenIntent = Intent(context, AlarmActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    putExtra("EXTRA_NOTIFICATION_ID", notificationId)
+                    putExtra("EXTRA_TITLE", title)
+                    putExtra("EXTRA_SUBTITLE", subtitle)
+                    putExtra("EXTRA_DETAILS", details)
+                    putExtra("EXTRA_CATEGORY", category)
+                    putExtra("EXTRA_REMINDER_ID", reminderId)
+                }
+                try {
+                    context.startActivity(fullScreenIntent)
+                } catch (e: Exception) {
+                    Log.d(TAG, "Direct activity start deferred to notification fullScreenIntent: ${e.message}")
+                }
+
                 CoroutineScope(Dispatchers.IO).launch {
                     val db = AppDatabase.getDatabase(context)
                     val settings = db.appSettingsDao().getSettingsDirect()

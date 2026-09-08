@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.components.BrandAboutFooter
 import com.example.ui.components.Card3D
 import com.example.ui.components.CategoryIconBadge
 import com.example.ui.components.EmptyStateCard
@@ -397,6 +398,12 @@ fun HomeScreen(
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Brand & About Us Footer
+        item {
+            BrandAboutFooter()
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 
