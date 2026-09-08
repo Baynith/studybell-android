@@ -58,9 +58,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var isFirstResume = true
+
     override fun onResume() {
         super.onResume()
-        AdMobManager.showAppOpenAdIfAvailable(this)
+        if (isFirstResume) {
+            isFirstResume = false
+        } else {
+            AdMobManager.showAppOpenAdIfAvailable(this)
+        }
     }
 }
 
